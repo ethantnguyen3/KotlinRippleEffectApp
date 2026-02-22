@@ -1,2 +1,0 @@
-C:\Users\ethan\project\REAndroid\RippleEffectApp\app\src\main\java\com\example\rippleeffect\data\Models.kt
-C:\Users\ethan\project\REAndroid\RippleEffectApp\app\src\main\java\com\example\rippleeffect\MainActivity.kt
