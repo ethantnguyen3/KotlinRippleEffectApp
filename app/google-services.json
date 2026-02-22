@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "13354063869",
+    "firebase_url": "https://agua-viva-accounting-default-rtdb.firebaseio.com",
+    "project_id": "agua-viva-accounting",
+    "storage_bucket": "agua-viva-accounting.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13354063869:android:f2c12f936d5ed6edfe2b94",
+        "android_client_info": {
+          "package_name": "com.example.rippleeffect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2bInk-jEbm_SLTGnAMKQo-9t3QspzNuc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -11,13 +11,48 @@ gradle-app.setting
 !gradle-wrapper.jar
 !gradle-wrapper.properties
 
+# Android / Gradle
+/build/
+/captures/
+.externalNativeBuild/
+
 # Local configuration
 local.properties
 
 # IDE
-.idea/
+/.idea/
 *.iml
 .DS_Store
 
 # Kotlin
+*.kotlin_module
 *.class
+
+# Android Studio
+*.hprof
+
+# IntelliJ
+out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keystore
+*.jks
+
+# Misc
+*/.gradle/
+
+# Ignore intermediate build artifacts and generated files
+app/build/
+**/intermediates/
+**/generated/
+**/outputs/
+**/tmp/
+
+# Ignore Android Studio run configs
+.run/
+
+# Jetifier
+jetified-*.*
