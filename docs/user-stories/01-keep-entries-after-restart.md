@@ -112,7 +112,7 @@ Table `submitted_entries`:
       session and show a short message (English / Spanish) saying they could
       not be saved.
 - [x] T9. Keep the existing best-effort `Backend.saveSubmittedEntries` call.
-- [ ] T10. Verify on the emulator: submit a sale and an expense, swipe the
+- [x] T10. Verify on the emulator: submit a sale and an expense, swipe the
       app away from recents (or `adb shell am force-stop
       com.example.rippleeffect`), reopen, and confirm both are still in the
       report list with the same description, amount, currency, type and date.
@@ -154,3 +154,15 @@ T10). The definition of done is checked by T10.
 | # | Mismatch found | Fix |
 |---|---|---|
 | 10 | All entries of one submit had the same date, so after a restart their order in the report list could change, even though the definition of done expects the same list back. | T7 gives them dates one millisecond apart, and the database sorts by date then insert order. |
+
+## Verification (T10)
+
+Run on the Android emulator (Medium Phone, API 37) with a debug build, starting from empty app data:
+
+1. Added "Water test" 5 as a Sale and "Bottles test" 2 as an Expense, then tapped **Submit Report**.
+2. The report list showed 2 records: Bottles test, $2.00, USD, Expense and Water test, $5.00, USD, Sale.
+3. Force-stopped the app (`adb shell am force-stop com.example.rippleeffect`) and relaunched it.
+4. The report list showed the same 2 records, with the same amounts, currency, type and order.
+5. `ripple_effect.db` was present in the app's private `databases` folder.
+
+Definition of done: met.
