@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -150,16 +151,27 @@ fun RippleEffectApp() {
         SavedReport(name = "Q3 Summary", dateCreated = Date(System.currentTimeMillis() - 86400000), status = ReportStatus.IN_PROGRESS, owner = "Jane Smith", content = "Quarterly results...")
     ) }
     val submittedEntries = remember { mutableStateListOf<SubmittedEntry>() }
+    val appContext = LocalContext.current.applicationContext
+    val entryStore = remember { LocalEntryStore(appContext) }
 
     LaunchedEffect(loadVersion) {
         lifecycleState = AppLifecycle.INITIALIZING
         runCatching {
             delay(500)
-            val remote = Backend.fetchSubmittedEntries()
-            if (remote.isNotEmpty()) {
-                submittedEntries.clear()
-                submittedEntries.addAll(remote.sortedByDescending { it.dateCreated })
+            // The on-device database is what the report list is built from.
+            var saved = entryStore.loadAll()
+            if (saved.isEmpty()) {
+                // Nothing on this device yet (e.g. fresh install): restore from
+                // Data Connect if it is configured, and keep a local copy.
+                val remote = Backend.fetchSubmittedEntries().sortedByDescending { it.dateCreated }
+                if (remote.isNotEmpty()) {
+                    runCatching { entryStore.insertAll(remote) }
+                        .onFailure { Log.e(TAG, "Failed to cache remote entries locally", it) }
+                    saved = remote
+                }
             }
+            submittedEntries.clear()
+            submittedEntries.addAll(saved)
             lifecycleState = AppLifecycle.READY
         }.onFailure {
             Log.e(TAG, "Failed to initialize backend", it)
@@ -175,7 +187,8 @@ fun RippleEffectApp() {
                 selectedTab = selectedTab, onTabSelected = { selectedTab = it },
                 language = language, onLanguageChange = { lang -> language = lang; translation = if (lang == "es") "Hola, ¿cómo estás?" else "Hello, how are you?" },
                 translation = translation, entries = accountingEntries, reports = savedReports,
-                submittedEntries = submittedEntries
+                submittedEntries = submittedEntries,
+                entryStore = entryStore
             )
         }
     }
@@ -205,7 +218,8 @@ fun MainContent(
     translation: String,
     entries: MutableList<AccountingEntry>,
     reports: MutableList<SavedReport>,
-    submittedEntries: MutableList<SubmittedEntry>
+    submittedEntries: MutableList<SubmittedEntry>,
+    entryStore: LocalEntryStore
 ) {
     val scope = rememberCoroutineScope()
     var reportToEmail by remember { mutableStateOf<SavedReport?>(null) }
@@ -354,19 +368,36 @@ fun MainContent(
                     entries = entries,
                     onReportSubmit = { newReport, currentEntries, currency ->
                         reports.add(0, newReport)
-                        scope.launch {
-                            Backend.saveSubmittedEntries(currentEntries, currency)
-                        }
                         currentCurrency = currency
                         entriesToEmail = currentEntries
                         reportToEmail = newReport
-                        currentEntries.forEach { entry ->
-                            submittedEntries.add(0, SubmittedEntry(
+                        val now = System.currentTimeMillis()
+                        // One millisecond apart so the newest-first order on screen is the
+                        // same after a restart (last entry added shows at the top).
+                        val newEntries = currentEntries.mapIndexed { index, entry ->
+                            SubmittedEntry(
                                 description = entry.type,
                                 amount = entry.amount,
                                 currency = currency,
-                                type = if (entry.isExpense) "Expense" else "Sale"
-                            ))
+                                type = if (entry.isExpense) "Expense" else "Sale",
+                                dateCreated = Date(now + index)
+                            )
+                        }
+                        scope.launch {
+                            // Save on the device first so the entries survive closing the app.
+                            runCatching { entryStore.insertAll(newEntries) }.onFailure {
+                                Log.e(TAG, "Failed to save submitted entries", it)
+                                Toast.makeText(
+                                    context,
+                                    if (isSpanish) "No se pudieron guardar las entradas en el dispositivo" else "Could not save entries on this device",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            // Newest first, matching the order loadAll() returns.
+                            submittedEntries.addAll(0, newEntries.asReversed())
+                        }
+                        scope.launch {
+                            Backend.saveSubmittedEntries(currentEntries, currency)
                         }
                         onTabSelected(1)
                     }
