@@ -13,6 +13,29 @@ Users can immediately access Ripple Effect Accounting in their preferred
 supported language, reducing language barriers and making the application
 more accessible to communities in Latin America and East Africa.
 
+## Supported languages
+
+The app supports exactly these four languages:
+
+| Language | Android code | Phone languages it covers | Translation status |
+|---|---|---|---|
+| English | `en` (default) | All English variants, and **any language not listed here** (fallback) | Original app text |
+| Spanish | `es` | All Spanish variants, e.g. Latin America (`es-419`), Mexico, Guatemala, Honduras, Spain | Existing app text, plus new strings by Claude that need native review |
+| Swahili | `sw` | Kenya (`sw-KE`), Tanzania (`sw-TZ`), Uganda | Machine translated by Claude, needs native review |
+| Portuguese | `pt` | Brazil (`pt-BR`), Portugal (`pt-PT`) | Machine translated by Claude, needs native review |
+
+How the app chooses: it goes down the phone's language list
+(**Settings > System > Languages**) and uses the first of these four it finds.
+If none of them is in the list, it uses English. On Android 13+, a language
+chosen for this app in **Settings > Apps > Ripple Effect > Language** takes
+priority over the phone's list.
+
+Any other language (for example French, Amharic, Kinyarwanda or K'iche') is
+**not supported** and shows English. To add one, create
+`app/src/main/res/values-xx/strings.xml` with every key, and add `xx` to
+`res/xml/locales_config.xml` and to `localeFilters` in `app/build.gradle.kts`.
+`StringResourcesTest` fails if any of the three lists disagree.
+
 ## Documentation
 
 ### Terms used here
