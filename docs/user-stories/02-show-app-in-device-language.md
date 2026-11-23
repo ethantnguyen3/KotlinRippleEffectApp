@@ -150,7 +150,7 @@ Adding one later is a new `values-xx/strings.xml` plus an entry in
       own text does not have, and extend T12's test to check the list.
 - [x] T15. Give the zero-record count its own string, because Portuguese and
       French plural rules treat 0 as singular ("0 registro").
-- [ ] T13. Verify on the emulator, from a fresh install, with the phone set
+- [x] T13. Verify on the emulator, from a fresh install, with the phone set
       to each of: English, Spanish, Swahili, Portuguese, and an unsupported
       language (French) → English. Also check a list of French then Spanish
       → Spanish, and changing the language while the app is open with a
@@ -236,18 +236,23 @@ Run on the Android emulator (Medium Phone, API 37) with a fresh debug
 install. Language set with `adb shell cmd locale set-device-locale`, and the
 two-language list through Settings > System > Languages.
 
-Unit tests: `StringResourcesTest` 5 of 5 passed; `assembleDebug` passed.
+Unit tests: `StringResourcesTest` 5 of 5 on the first run and 6 of 6 after
+the fixes; `assembleDebug` passed both times. After the fixes, `aapt2` shows
+the APK holds only the default (English), es, pt and sw folders.
 
 | Check | First run | After pass 7 fixes |
 |---|---|---|
-| English (en-US) | Pass | |
-| Spanish (es-MX) | Pass | |
-| Swahili (sw-KE) | Pass | |
-| Portuguese (pt-BR) | Pass | |
-| French (fr-FR) falls back to English | Pass | |
-| No manual language switch | Pass | |
-| French then Spanish shows Spanish | **Fail** (English) | |
-| Language change with app open keeps the draft entry | Pass | |
-| Spanish table shows Venta / Gasto, "2 registros" | Pass | |
-| Swahili table shows Mauzo / Matumizi, "rekodi 2" | Pass | |
-| Android 13+ app language lists English, Español, Kiswahili, Português | Pass | |
+| English (en-US) | Pass | Pass |
+| Spanish (es-MX) | Pass | Pass (Profit card "Ganancias") |
+| Swahili (sw-KE) | Pass | Pass |
+| Portuguese (pt-BR) | Pass | Pass (empty table "0 registros") |
+| French (fr-FR) falls back to English | Pass | Pass (empty table "0 records") |
+| No manual language switch | Pass | Not affected by the fixes |
+| French then Spanish shows Spanish | **Fail** (English) | Pass |
+| Language change with app open keeps the draft entry | Pass | Not affected by the fixes |
+| Spanish table shows Venta / Gasto, "2 registros" | Pass | Not affected by the fixes |
+| Swahili table shows Mauzo / Matumizi, "rekodi 2" | Pass | Not affected by the fixes |
+| Android 13+ app language lists English, Español, Kiswahili, Português | Pass | Not affected by the fixes |
+
+Definition of done: met. Screenshots of both runs are on the test PC in
+`Pictures\story02-screens\`. Translations still need native-speaker review.
