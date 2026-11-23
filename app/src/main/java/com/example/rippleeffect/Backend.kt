@@ -105,18 +105,18 @@ object Backend {
 					"query",
 					"""
 					mutation CreateSubmittedEntry(
-					  $description: String!,
-					  $amount: Float!,
-					  $currency: String!,
-					  $type: String!,
-					  $dateCreated: Timestamp!
+					  ${'$'}description: String!,
+					  ${'$'}amount: Float!,
+					  ${'$'}currency: String!,
+					  ${'$'}type: String!,
+					  ${'$'}dateCreated: Timestamp!
 					) {
 					  submittedEntry_insert(data: {
-						description: $description,
-						amount: $amount,
-						currency: $currency,
-						type: $type,
-						dateCreated: $dateCreated
+						description: ${'$'}description,
+						amount: ${'$'}amount,
+						currency: ${'$'}currency,
+						type: ${'$'}type,
+						dateCreated: ${'$'}dateCreated
 					  }) {
 						id
 					  }
