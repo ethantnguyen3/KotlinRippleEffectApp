@@ -43,6 +43,14 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    // Ship only the app's own languages. Libraries bring translations for many
+    // more (e.g. French); if those stay in the APK, Android treats them as
+    // supported, so a phone set to French-then-Spanish would get English
+    // app text instead of Spanish. Keep in step with res/xml/locales_config.xml.
+    androidResources {
+        localeFilters += listOf("en", "es", "sw", "pt")
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portuguese (Brazilian wording; also used for pt-PT).
+     NEEDS REVIEW: machine translated by Claude; have a native speaker review before release. -->
+<resources>
+
+    <!-- General -->
+    <string name="logo_content_description">Logotipo da Ripple Effect</string>
+    <string name="retry_message">Não foi possível carregar os recursos de rede</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="tab_report">Relatório</string>
+    <string name="tab_table">Categorias</string>
+    <string name="send">Enviar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Excluir</string>
+    <string name="unknown_error">Erro desconhecido</string>
+
+    <!-- Email dialogs -->
+    <string name="email_draft_created_title">Rascunho criado</string>
+    <string name="email_failed_title">Falha ao abrir</string>
+    <string name="email_draft_created_message">Seu aplicativo de e-mail foi aberto. Toque em \'Enviar\' dentro do aplicativo.</string>
+    <string name="email_failed_message">Não foi possível preparar o e-mail: %1$s</string>
+    <string name="got_it">Entendi</string>
+    <string name="send_via_email">Enviar por e-mail</string>
+    <string name="enter_email">Digite seu endereço de e-mail:</string>
+    <string name="email_label">E-mail</string>
+    <string name="invalid_email">Endereço de e-mail inválido</string>
+    <string name="email_subject">Relatório da Ripple Effect: %1$s</string>
+    <string name="email_body">Segue em anexo o relatório %1$s.</string>
+    <string name="email_chooser_title">Enviar e-mail…</string>
+
+    <!-- Report tab -->
+    <string name="water_sales_accounting">Contabilidade de Vendas de Água</string>
+    <string name="costs">Custos</string>
+    <string name="profit">Lucro</string>
+    <string name="badge_expenses">Despesas</string>
+    <string name="badge_income">Receita</string>
+    <string name="select_currency">Selecionar moeda</string>
+    <string name="currency_usd">Dólar americano</string>
+    <string name="currency_gtq">Quetzal</string>
+    <string name="currency_hnl">Lempira</string>
+    <string name="data_entry">Entrada de dados</string>
+    <string name="description">Descrição</string>
+    <string name="amount">Valor</string>
+    <string name="currency">Moeda</string>
+    <string name="type">Tipo</string>
+    <string name="date">Data</string>
+    <string name="add_expense">+ Despesa</string>
+    <string name="add_sale">+ Venda</string>
+    <string name="recent_records">Registros recentes</string>
+    <string name="report">Relatório</string>
+    <string name="print">Imprimir</string>
+    <string name="total_costs">Custos totais:</string>
+    <string name="total_profit">Lucro total:</string>
+    <string name="net_benefit">Benefício líquido:</string>
+    <string name="breakdown">Detalhamento</string>
+    <string name="summary_report_optional">Resumo do relatório (opcional)</string>
+    <string name="summary_placeholder">Escreva o resumo do seu relatório aqui…</string>
+    <string name="submit_report">Enviar relatório</string>
+    <string name="save_failed">Não foi possível salvar os registros neste dispositivo</string>
+
+    <!-- Report text attached to the email -->
+    <string name="report_date_pattern">dd-MM-yy</string>
+    <string name="report_name">Relatório %1$s</string>
+    <string name="report_accounting_summary">Resumo contábil:</string>
+    <string name="report_net">Líquido:</string>
+    <string name="report_breakdown">Detalhamento:</string>
+    <string name="report_user_summary">Resumo do usuário:</string>
+
+    <!-- Report list (data table) -->
+    <string name="records_zero">0 registros</string>
+    <string name="data_table">Tabela de dados</string>
+    <string name="filter">Filtrar</string>
+    <string name="email_button">E-mail</string>
+    <string name="export_title">Exportação da tabela de dados</string>
+    <string name="export_generated">Gerado em: %1$s</string>
+    <string name="export_records">Registros: %1$d</string>
+    <string name="export_name">Exportação-%1$s</string>
+    <string name="no_data_yet">Ainda não há dados</string>
+    <string name="no_data_hint">Envie um relatório na aba Relatório</string>
+    <string name="no_results_filters">Nenhum resultado corresponde aos filtros atuais</string>
+    <string name="type_sale">Venda</string>
+    <string name="type_expense">Despesa</string>
+    <string name="sort_ascending">↑ Crescente</string>
+    <string name="sort_descending">↓ Decrescente</string>
+
+    <!-- Filters -->
+    <string name="add_filter">Adicionar filtro</string>
+    <string name="add">Adicionar</string>
+    <string name="clear_all">Limpar tudo</string>
+    <string name="filter_and">E</string>
+    <string name="filter_or">OU</string>
+    <string name="op_contains">contém</string>
+    <string name="op_equals">igual a</string>
+    <string name="op_greater">&gt; (maior)</string>
+    <string name="op_less">&lt; (menor)</string>
+    <string name="op_before">antes de</string>
+    <string name="op_after">depois de</string>
+    <string name="choose">Escolher…</string>
+    <string name="search">Buscar…</string>
+
+    <!-- Saved reports screen (not shown on a tab today) -->
+    <string name="untitled_report">Relatório sem título</string>
+    <string name="add_new_report">Adicionar novo relatório</string>
+    <string name="saved_reports">Relatórios salvos</string>
+    <string name="delete_report">Excluir relatório</string>
+    <string name="delete_report_warning">AVISO: Tem certeza de que deseja excluir este relatório para sempre? Não será possível recuperá-lo.</string>
+    <string name="delete_caps">EXCLUIR</string>
+    <string name="cancel_caps">CANCELAR</string>
+    <string name="editing_enabled">Edição ativada</string>
+    <string name="enable_editing">Ativar edição?</string>
+    <string name="view">Ver</string>
+    <string name="report_title_label">Título do relatório</string>
+    <string name="start_typing">Comece a digitar seu relatório…</string>
+    <string name="back">Voltar</string>
+    <string name="complete">Concluir</string>
+    <string name="status_completed">Concluído</string>
+    <string name="status_in_progress">Em andamento</string>
+
+    <plurals name="records_count">
+        <item quantity="one">%d registro</item>
+        <item quantity="other">%d registros</item>
+    </plurals>
+</resources>
