@@ -886,7 +886,9 @@ fun DataTableScreen(
 
         // Record count
         Text(
-            pluralStringResource(R.plurals.records_count, sortedEntries.size, sortedEntries.size),
+            // Zero has its own string: Portuguese and French plural rules treat 0 as singular.
+            if (sortedEntries.isEmpty()) stringResource(R.string.records_zero)
+            else pluralStringResource(R.plurals.records_count, sortedEntries.size, sortedEntries.size),
             fontSize = 12.sp, color = AppColors.TextSecondary, modifier = Modifier.padding(vertical = 8.dp)
         )
 

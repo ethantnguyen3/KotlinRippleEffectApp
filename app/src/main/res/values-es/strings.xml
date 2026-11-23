@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Spanish (Latin America). Text that existed in the app is kept word for word.
      NEEDS REVIEW: strings that were English-only before (email label, subject, body,
-     chooser, AND/OR, unknown error) were translated by Claude. -->
+     chooser, AND/OR, unknown error) were translated by Claude, and the Profit card
+     title changed from Ingresos (same as its Income tag) to Ganancias. -->
 <resources>
 
     <!-- General -->
@@ -33,7 +34,7 @@
     <!-- Report tab -->
     <string name="water_sales_accounting">Contabilidad de Ventas de Agua</string>
     <string name="costs">Costos</string>
-    <string name="profit">Ingresos</string>
+    <string name="profit">Ganancias</string>
     <string name="badge_expenses">Gastos</string>
     <string name="badge_income">Ingresos</string>
     <string name="select_currency">Seleccionar Moneda</string>
@@ -52,7 +53,7 @@
     <string name="report">Informe</string>
     <string name="print">Imprimir</string>
     <string name="total_costs">Costos Totales:</string>
-    <string name="total_profit">Ingresos Totales:</string>
+    <string name="total_profit">Ganancias Totales:</string>
     <string name="net_benefit">Beneficio Neto:</string>
     <string name="breakdown">Desglose</string>
     <string name="summary_report_optional">Resumen del Informe (opcional)</string>
@@ -69,6 +70,7 @@
     <string name="report_user_summary">Resumen del Usuario:</string>
 
     <!-- Report list (data table) -->
+    <string name="records_zero">0 registros</string>
     <string name="data_table">Tabla de Datos</string>
     <string name="filter">Filtrar</string>
     <string name="email_button">Correo</string>

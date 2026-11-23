@@ -68,6 +68,7 @@
     <string name="report_user_summary">Resumo do usuário:</string>
 
     <!-- Report list (data table) -->
+    <string name="records_zero">0 registros</string>
     <string name="data_table">Tabela de dados</string>
     <string name="filter">Filtrar</string>
     <string name="email_button">E-mail</string>

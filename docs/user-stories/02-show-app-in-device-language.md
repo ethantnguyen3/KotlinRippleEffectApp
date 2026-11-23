@@ -49,7 +49,7 @@ more accessible to communities in Latin America and East Africa.
 | Language | Resource folder | Who it is for | Notes |
 |---|---|---|---|
 | English | `values/` | Default and fallback for everyone else. | Existing English text is kept as the source. |
-| Spanish | `values-es/` | Latin America (the app's currencies, GTQ and HNL, are Guatemala and Honduras). Matches `es`, `es-419`, `es-GT`, `es-HN`, `es-MX`, etc. | Existing Spanish text is kept word for word. New Spanish strings were written by Claude. |
+| Spanish | `values-es/` | Latin America (the app's currencies, GTQ and HNL, are Guatemala and Honduras). Matches `es`, `es-419`, `es-GT`, `es-HN`, `es-MX`, etc. | Existing Spanish text is kept word for word, except the Profit card title (see pass 7). New Spanish strings were written by Claude. |
 | Swahili | `values-sw/` | East Africa (Kenya, Tanzania, Uganda). Matches `sw`, `sw-KE`, `sw-TZ`. | Machine translated by Claude. **Needs native-speaker review.** |
 | Portuguese | `values-pt/` | Brazil, the largest Latin American country. Matches `pt-BR` and `pt-PT`. | Machine translated by Claude (Brazilian wording). **Needs native-speaker review.** |
 
@@ -144,6 +144,12 @@ Adding one later is a new `values-xx/strings.xml` plus an entry in
       string and plural keys as English, uses the same format arguments, and
       that `locales_config.xml` lists exactly the languages that have a
       `values-xx` folder.
+- [x] T14. Package only the supported languages
+      (`androidResources.localeFilters` in `app/build.gradle.kts`) so
+      library translations cannot make Android pick a language the app's
+      own text does not have, and extend T12's test to check the list.
+- [x] T15. Give the zero-record count its own string, because Portuguese and
+      French plural rules treat 0 as singular ("0 registro").
 - [ ] T13. Verify on the emulator, from a fresh install, with the phone set
       to each of: English, Spanish, Swahili, Portuguese, and an unsupported
       language (French) → English. Also check a list of French then Spanish
@@ -207,3 +213,41 @@ languages, T13), Latin America (Spanish, Portuguese) and East Africa
 
 No mismatches found. Pass 4's mapping still holds, and the three items from
 pass 5 are covered by T6, T8 and Limits.
+
+### Pass 7 (emulator verification, T13)
+
+The first emulator run passed 9 of 10 checks. These mismatches came out of it:
+
+| # | Mismatch found | Fix |
+|---|---|---|
+| 18 | French then Spanish showed **English**, not Spanish. The app's libraries ship French translations, so the APK had a `fr` folder and Android treated French as supported, leaving the app's own text on the English fallback. That breaks "preferred supported language". | T14: `localeFilters` keeps only en, es, sw, pt in the APK; the unit test checks it matches the `values-xx` folders. |
+| 19 | The record count read "0 registro" in Portuguese and "0 record" on a French phone (English text, French plural rules). | T15: a separate `records_zero` string for an empty list. |
+| 20 | The Spanish Profit card was titled "Ingresos", the same word as its Income tag, so the card read "Ingresos / Ingresos". | Spanish `profit` is now "Ganancias" and `total_profit` "Ganancias Totales:", flagged for native review. |
+
+### Pass 8
+
+No mismatches found. T14 and T15 are mapped to the definition of done
+("preferred supported language") and to T12/T13; the re-run of T13 checks
+them.
+
+## Verification (T13)
+
+Run on the Android emulator (Medium Phone, API 37) with a fresh debug
+install. Language set with `adb shell cmd locale set-device-locale`, and the
+two-language list through Settings > System > Languages.
+
+Unit tests: `StringResourcesTest` 5 of 5 passed; `assembleDebug` passed.
+
+| Check | First run | After pass 7 fixes |
+|---|---|---|
+| English (en-US) | Pass | |
+| Spanish (es-MX) | Pass | |
+| Swahili (sw-KE) | Pass | |
+| Portuguese (pt-BR) | Pass | |
+| French (fr-FR) falls back to English | Pass | |
+| No manual language switch | Pass | |
+| French then Spanish shows Spanish | **Fail** (English) | |
+| Language change with app open keeps the draft entry | Pass | |
+| Spanish table shows Venta / Gasto, "2 registros" | Pass | |
+| Swahili table shows Mauzo / Matumizi, "rekodi 2" | Pass | |
+| Android 13+ app language lists English, Español, Kiswahili, Português | Pass | |

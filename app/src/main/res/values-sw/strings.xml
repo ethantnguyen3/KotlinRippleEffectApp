@@ -68,6 +68,7 @@
     <string name="report_user_summary">Muhtasari wa Mtumiaji:</string>
 
     <!-- Report list (data table) -->
+    <string name="records_zero">rekodi 0</string>
     <string name="data_table">Jedwali la Data</string>
     <string name="filter">Chuja</string>
     <string name="email_button">Barua pepe</string>

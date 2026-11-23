@@ -91,6 +91,18 @@ class StringResourcesTest {
     }
 
     @Test
+    fun packagedLocalesMatchResourceFolders() {
+        // localeFilters keeps library translations (e.g. French) out of the APK, so
+        // Android cannot pick a language the app's own text does not have.
+        val gradle = listOf(File("app/build.gradle.kts"), File("build.gradle.kts")).first { it.isFile }.readText()
+        val filters = Regex("localeFilters\\s*\\+=\\s*listOf\\(([^)]*)\\)").find(gradle)
+        assertTrue("app/build.gradle.kts must set androidResources.localeFilters", filters != null)
+        val packaged = Regex("\"([a-zA-Z-]+)\"").findAll(filters!!.groupValues[1]).map { it.groupValues[1] }.sorted().toList()
+        val expected = (listOf("en") + translationFolders().map { it.removePrefix("values-") }).sorted()
+        assertEquals(expected, packaged)
+    }
+
+    @Test
     fun localeConfigMatchesResourceFolders() {
         val doc = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
             .newDocumentBuilder().parse(File(resDir, "xml/locales_config.xml"))
