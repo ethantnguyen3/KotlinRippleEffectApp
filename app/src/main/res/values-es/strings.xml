@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- general -->
+    <string name="logo_description">Logotipo de Ripple Effect</string>
+    <string name="report">Informe</string>
+    <string name="tab_categories">Tabla</string>
+    <string name="cancel">Cancelar</string>
+    <string name="send">Enviar</string>
+    <string name="description">Descripción</string>
+    <string name="amount">Cantidad</string>
+    <string name="currency">Moneda</string>
+    <string name="type">Tipo</string>
+    <string name="date">Fecha</string>
+    <string name="print">Imprimir</string>
+
+    <!-- loading / retry -->
+    <string name="network_error">No se pudieron cargar los recursos de red</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- language row -->
+    <string name="current_language_name">Español</string>
+    <string name="greeting">Hola, ¿cómo estás?</string>
+
+    <!-- report tab -->
+    <string name="water_sales_title">Contabilidad de Ventas de Agua</string>
+    <string name="costs">Costos</string>
+    <string name="profit">Ingresos</string>
+    <string name="badge_expenses">Gastos</string>
+    <string name="badge_income">Ingresos</string>
+    <string name="select_currency">Seleccionar Moneda</string>
+    <string name="currency_usd">Dólar EEUU</string>
+    <string name="currency_gtq">Quetzal</string>
+    <string name="currency_hnl">Lempira</string>
+    <string name="data_entry">Registro de Datos</string>
+    <string name="add_expense">+ Gasto</string>
+    <string name="add_sale">+ Venta</string>
+    <string name="recent_records">Registros Recientes</string>
+    <string name="total_costs_label">Costos Totales:</string>
+    <string name="total_profit_label">Ingresos Totales:</string>
+    <string name="net_benefit_label">Beneficio Neto:</string>
+    <string name="breakdown">Desglose</string>
+    <string name="summary_optional">Resumen del Informe (opcional)</string>
+    <string name="summary_placeholder">Escriba su informe de resumen aquí...</string>
+    <string name="submit_report">Enviar Informe</string>
+
+    <!-- emailed report text -->
+    <string name="report_content_header">Resumen de Contabilidad:</string>
+    <string name="report_total_costs">Costos Totales: %1$s</string>
+    <string name="report_total_profit">Ingresos Totales: %1$s</string>
+    <string name="report_net">Neto: %1$s</string>
+    <string name="report_breakdown">Desglose:</string>
+    <string name="report_user_summary">Resumen del Usuario:</string>
+    <string name="report_name">Informe %1$s</string>
+    <string name="report_date_pattern">dd-MM-yy</string>
+
+    <!-- email dialogs -->
+    <string name="email_draft_created">Borrador Creado</string>
+    <string name="email_open_failed">Error al Abrir</string>
+    <string name="email_draft_message">Se ha abierto su aplicación de correo. Por favor, presione \'Enviar\' allí.</string>
+    <string name="email_prepare_failed">No se pudo preparar el correo: %1$s</string>
+    <string name="got_it">Entendido</string>
+    <string name="send_via_email">Enviar por Correo</string>
+    <string name="enter_email">Ingrese su dirección de correo electrónico:</string>
+    <string name="email_label">Correo electrónico</string>
+    <string name="invalid_email">Correo inválido</string>
+    <string name="email_subject">Informe de Ripple Effect: %1$s</string>
+    <string name="email_body">Adjunto encontrará el informe de %1$s.</string>
+    <string name="email_chooser_title">Enviar correo...</string>
+
+    <!-- data table tab -->
+    <string name="data_table_title">Tabla de Datos</string>
+    <string name="filter">Filtrar</string>
+    <string name="email_button">Correo</string>
+    <plurals name="record_count">
+        <item quantity="one">%d registro</item>
+        <item quantity="other">%d registros</item>
+    </plurals>
+    <string name="no_data_yet">No hay datos aún</string>
+    <string name="no_data_hint">Envíe un informe en la pestaña Informe</string>
+    <string name="no_filter_results">No hay resultados con estos filtros</string>
+    <string name="type_expense">Gasto</string>
+    <string name="type_sale">Venta</string>
+    <string name="export_header">Exportación de Tabla de Datos</string>
+    <string name="export_generated">Generado: %1$s</string>
+    <string name="export_records">Registros: %1$d</string>
+    <string name="export_name">Exportación-%1$s</string>
+
+    <!-- sorting -->
+    <string name="sort_ascending">↑ Ascendente</string>
+    <string name="sort_descending">↓ Descendente</string>
+
+    <!-- filters -->
+    <string name="add_filter">Agregar Filtro</string>
+    <string name="add">Agregar</string>
+    <string name="clear_all">Limpiar Todo</string>
+    <string name="filter_and">Y</string>
+    <string name="filter_or">O</string>
+    <string name="choose">Elegir…</string>
+    <string name="search_placeholder">Buscar…</string>
+    <string name="op_contains">contiene</string>
+    <string name="op_equals">igual a</string>
+    <string name="op_greater">&gt; (mayor)</string>
+    <string name="op_less">&lt; (menor)</string>
+    <string name="op_before">antes de</string>
+    <string name="op_after">después de</string>
+
+    <!-- status -->
+    <string name="status_completed">Completado</string>
+    <string name="status_in_progress">En Progreso</string>
+    <string name="status_draft">Borrador</string>
+
+    <!-- saved reports / editor (not used yet) -->
+    <string name="untitled_report">Informe sin título</string>
+    <string name="add_new_report">Nuevo Informe</string>
+    <string name="saved_reports">Informes Guardados</string>
+    <string name="delete_report">Eliminar Informe</string>
+    <string name="delete_report_warning">ADVERTENCIA: ¿Está seguro de que desea eliminar este informe para siempre? No podrá recuperarlo.</string>
+    <string name="delete_caps">ELIMINAR</string>
+    <string name="cancel_caps">CANCELAR</string>
+    <string name="editing_enabled">Modo Edición Activado</string>
+    <string name="enable_editing">¿Habilitar edición?</string>
+    <string name="edit">Editar</string>
+    <string name="view">Ver</string>
+    <string name="report_title_label">Título del informe</string>
+    <string name="report_body_placeholder">Empieza a escribir...</string>
+    <string name="back">Atrás</string>
+    <string name="complete">Publicar</string>
+
+</resources>

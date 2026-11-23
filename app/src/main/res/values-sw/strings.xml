@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- draft, needs native speaker review -->
+
+    <!-- general -->
+    <string name="logo_description">Nembo ya Ripple Effect</string>
+    <string name="report">Ripoti</string>
+    <string name="tab_categories">Jedwali</string>
+    <string name="cancel">Ghairi</string>
+    <string name="send">Tuma</string>
+    <string name="description">Maelezo</string>
+    <string name="amount">Kiasi</string>
+    <string name="currency">Sarafu</string>
+    <string name="type">Aina</string>
+    <string name="date">Tarehe</string>
+    <string name="print">Chapisha</string>
+
+    <!-- loading / retry -->
+    <string name="network_error">Imeshindwa kupakia rasilimali za mtandao</string>
+    <string name="retry">Jaribu tena</string>
+
+    <!-- language row -->
+    <string name="current_language_name">Kiswahili</string>
+    <string name="greeting">Habari, hujambo?</string>
+
+    <!-- report tab -->
+    <string name="water_sales_title">Uhasibu wa Mauzo ya Maji</string>
+    <string name="costs">Gharama</string>
+    <string name="profit">Mapato</string>
+    <string name="badge_expenses">Matumizi</string>
+    <string name="badge_income">Mapato</string>
+    <string name="select_currency">Chagua Sarafu</string>
+    <string name="currency_usd">Dola ya Marekani</string>
+    <string name="currency_gtq">Quetzal</string>
+    <string name="currency_hnl">Lempira</string>
+    <string name="data_entry">Kuingiza Data</string>
+    <string name="add_expense">+ Matumizi</string>
+    <string name="add_sale">+ Mauzo</string>
+    <string name="recent_records">Rekodi za Hivi Karibuni</string>
+    <string name="total_costs_label">Jumla ya Gharama:</string>
+    <string name="total_profit_label">Jumla ya Mapato:</string>
+    <string name="net_benefit_label">Faida Halisi:</string>
+    <string name="breakdown">Mchanganuo</string>
+    <string name="summary_optional">Muhtasari wa Ripoti (si lazima)</string>
+    <string name="summary_placeholder">Andika muhtasari wa ripoti yako hapa...</string>
+    <string name="submit_report">Wasilisha Ripoti</string>
+
+    <!-- emailed report text -->
+    <string name="report_content_header">Muhtasari wa Uhasibu:</string>
+    <string name="report_total_costs">Jumla ya Gharama: %1$s</string>
+    <string name="report_total_profit">Jumla ya Mapato: %1$s</string>
+    <string name="report_net">Faida Halisi: %1$s</string>
+    <string name="report_breakdown">Mchanganuo:</string>
+    <string name="report_user_summary">Muhtasari wa Mtumiaji:</string>
+    <string name="report_name">Ripoti %1$s</string>
+    <string name="report_date_pattern">dd-MM-yy</string>
+
+    <!-- email dialogs -->
+    <string name="email_draft_created">Rasimu Imeundwa</string>
+    <string name="email_open_failed">Imeshindwa Kufungua</string>
+    <string name="email_draft_message">Programu yako ya barua pepe imefunguliwa. Tafadhali bonyeza \'Tuma\' ndani ya programu.</string>
+    <string name="email_prepare_failed">Imeshindwa kuandaa barua pepe: %1$s</string>
+    <string name="got_it">Nimeelewa</string>
+    <string name="send_via_email">Tuma kwa Barua Pepe</string>
+    <string name="enter_email">Weka anwani yako ya barua pepe:</string>
+    <string name="email_label">Barua pepe</string>
+    <string name="invalid_email">Anwani ya barua pepe si sahihi</string>
+    <string name="email_subject">Ripoti ya Ripple Effect: %1$s</string>
+    <string name="email_body">Tafadhali pata ripoti ya %1$s iliyoambatishwa.</string>
+    <string name="email_chooser_title">Tuma Barua Pepe...</string>
+
+    <!-- data table tab -->
+    <string name="data_table_title">Jedwali la Data</string>
+    <string name="filter">Chuja</string>
+    <string name="email_button">Barua Pepe</string>
+    <plurals name="record_count">
+        <item quantity="one">rekodi %d</item>
+        <item quantity="other">rekodi %d</item>
+    </plurals>
+    <string name="no_data_yet">Hakuna data bado</string>
+    <string name="no_data_hint">Wasilisha ripoti kwenye kichupo cha Ripoti</string>
+    <string name="no_filter_results">Hakuna matokeo yanayolingana na vichujio</string>
+    <string name="type_expense">Matumizi</string>
+    <string name="type_sale">Mauzo</string>
+    <string name="export_header">Uhamishaji wa Jedwali la Data</string>
+    <string name="export_generated">Imetolewa: %1$s</string>
+    <string name="export_records">Rekodi: %1$d</string>
+    <string name="export_name">Uhamishaji-%1$s</string>
+
+    <!-- sorting -->
+    <string name="sort_ascending">↑ Kupanda</string>
+    <string name="sort_descending">↓ Kushuka</string>
+
+    <!-- filters -->
+    <string name="add_filter">Ongeza Kichujio</string>
+    <string name="add">Ongeza</string>
+    <string name="clear_all">Futa Zote</string>
+    <string name="filter_and">NA</string>
+    <string name="filter_or">AU</string>
+    <string name="choose">Chagua…</string>
+    <string name="search_placeholder">Tafuta…</string>
+    <string name="op_contains">ina</string>
+    <string name="op_equals">sawa na</string>
+    <string name="op_greater">&gt; (zaidi ya)</string>
+    <string name="op_less">&lt; (chini ya)</string>
+    <string name="op_before">kabla ya</string>
+    <string name="op_after">baada ya</string>
+
+    <!-- status -->
+    <string name="status_completed">Imekamilika</string>
+    <string name="status_in_progress">Inaendelea</string>
+    <string name="status_draft">Rasimu</string>
+
+    <!-- saved reports / editor (not used yet) -->
+    <string name="untitled_report">Ripoti Isiyo na Jina</string>
+    <string name="add_new_report">Ongeza Ripoti Mpya</string>
+    <string name="saved_reports">Ripoti Zilizohifadhiwa</string>
+    <string name="delete_report">Futa Ripoti</string>
+    <string name="delete_report_warning">ONYO: Una uhakika unataka kufuta ripoti hii milele? Hutaweza kuirejesha tena.</string>
+    <string name="delete_caps">FUTA</string>
+    <string name="cancel_caps">GHAIRI</string>
+    <string name="editing_enabled">Uhariri Umewashwa</string>
+    <string name="enable_editing">Washa uhariri?</string>
+    <string name="edit">Hariri</string>
+    <string name="view">Tazama</string>
+    <string name="report_title_label">Kichwa cha Ripoti</string>
+    <string name="report_body_placeholder">Anza kuandika ripoti yako...</string>
+    <string name="back">Rudi</string>
+    <string name="complete">Kamilisha</string>
+
+</resources>

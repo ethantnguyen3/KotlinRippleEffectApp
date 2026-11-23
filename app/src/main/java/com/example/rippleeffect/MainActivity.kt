@@ -3,12 +3,14 @@ package com.example.rippleeffect
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -22,12 +24,16 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -68,12 +74,24 @@ object AppColors {
 data class AccountingEntry(val id: String = UUID.randomUUID().toString(), var type: String, var amount: Double, val isExpense: Boolean)
 data class SavedReport(val id: String = UUID.randomUUID().toString(), var name: String, val dateCreated: Date, var status: ReportStatus, val owner: String, var content: String = "")
 enum class ReportStatus { COMPLETED, IN_PROGRESS, DRAFT }
-enum class Currency(val code: String, val symbol: String, val nameEn: String, val nameEs: String) {
-    USD("USD", "$", "US Dollar", "Dólar EEUU"),
-    GTQ("GTQ", "Q", "Quetzal", "Quetzal"),
-    HNL("HNL", "L", "Lempira", "Lempira")
+enum class Currency(val code: String, val symbol: String, @StringRes val nameRes: Int) {
+    USD("USD", "$", R.string.currency_usd),
+    GTQ("GTQ", "Q", R.string.currency_gtq),
+    HNL("HNL", "L", R.string.currency_hnl)
 }
 enum class AppLifecycle { INITIALIZING, READY, ERROR }
+
+// ==================== NEW DROPDOWN LANGUAGE SELECTOR ====================
+// languages the app supports; tag must match the values-xx folder
+enum class AppLanguage(val tag: String, val nativeName: String) {
+    ENGLISH("en", "English"),
+    SPANISH("es", "Español"),
+    SWAHILI("sw", "Kiswahili");
+
+    companion object {
+        fun fromTag(tag: String) = entries.firstOrNull { it.tag == tag } ?: ENGLISH
+    }
+}
 
 // ==================== DATA TABLE MODELS ====================
 data class SubmittedEntry(
@@ -85,21 +103,21 @@ data class SubmittedEntry(
     val dateCreated: Date = Date()
 )
 
-enum class FilterField(val label: String, val labelEs: String) {
-    DESCRIPTION("Description", "Descripción"),
-    AMOUNT("Amount", "Cantidad"),
-    CURRENCY("Currency", "Moneda"),
-    TYPE("Type", "Tipo"),
-    DATE("Date", "Fecha")
+enum class FilterField(@StringRes val labelRes: Int) {
+    DESCRIPTION(R.string.description),
+    AMOUNT(R.string.amount),
+    CURRENCY(R.string.currency),
+    TYPE(R.string.type),
+    DATE(R.string.date)
 }
 
-enum class FilterOperator(val label: String, val labelEs: String) {
-    CONTAINS("contains", "contiene"),
-    EQUALS("equals", "igual a"),
-    GREATER_THAN("> (greater)", "> (mayor)"),
-    LESS_THAN("< (less)", "< (menor)"),
-    BEFORE("before", "antes de"),
-    AFTER("after", "después de")
+enum class FilterOperator(@StringRes val labelRes: Int) {
+    CONTAINS(R.string.op_contains),
+    EQUALS(R.string.op_equals),
+    GREATER_THAN(R.string.op_greater),
+    LESS_THAN(R.string.op_less),
+    BEFORE(R.string.op_before),
+    AFTER(R.string.op_after)
 }
 
 enum class FilterConnector { AND, OR }
@@ -137,13 +155,30 @@ fun RippleEffectTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = lightColorScheme(primary = AppColors.Primary, background = AppColors.Background, surface = AppColors.Surface), content = content)
 }
 
+// makes stringResource() inside content use the chosen language instead of the phone's
+@Composable
+fun ProvideAppLanguage(languageTag: String, content: @Composable () -> Unit) {
+    val baseContext = LocalContext.current
+    val baseConfig = LocalConfiguration.current
+    val localizedConfig = remember(languageTag, baseConfig) {
+        Configuration(baseConfig).apply { setLocale(Locale.forLanguageTag(languageTag)) }
+    }
+    val localizedContext = remember(localizedConfig) {
+        baseContext.createConfigurationContext(localizedConfig)
+    }
+    CompositionLocalProvider(
+        LocalConfiguration provides localizedConfig,
+        LocalContext provides localizedContext,
+        content = content
+    )
+}
+
 @Composable
 fun RippleEffectApp() {
     var lifecycleState by remember { mutableStateOf(AppLifecycle.INITIALIZING) }
     var loadVersion by remember { mutableIntStateOf(0) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var language by remember { mutableStateOf("en") }
-    var translation by remember { mutableStateOf("Hello, how are you?") }
     val accountingEntries = remember { mutableStateListOf<AccountingEntry>() }
     val savedReports = remember { mutableStateListOf(
         SavedReport(name = "Annual Audit", dateCreated = Date(), status = ReportStatus.COMPLETED, owner = "John Doe", content = "Initial report content..."),
@@ -167,16 +202,18 @@ fun RippleEffectApp() {
         }
     }
 
-    Crossfade(targetState = lifecycleState, label = "AppTransition") { state ->
-        when (state) {
-            AppLifecycle.INITIALIZING -> LoadingScreen()
-            AppLifecycle.ERROR -> RetryScreen { loadVersion += 1 }
-            AppLifecycle.READY -> MainContent(
-                selectedTab = selectedTab, onTabSelected = { selectedTab = it },
-                language = language, onLanguageChange = { lang -> language = lang; translation = if (lang == "es") "Hola, ¿cómo estás?" else "Hello, how are you?" },
-                translation = translation, entries = accountingEntries, reports = savedReports,
-                submittedEntries = submittedEntries
-            )
+    ProvideAppLanguage(language) {
+        Crossfade(targetState = lifecycleState, label = "AppTransition") { state ->
+            when (state) {
+                AppLifecycle.INITIALIZING -> LoadingScreen()
+                AppLifecycle.ERROR -> RetryScreen { loadVersion += 1 }
+                AppLifecycle.READY -> MainContent(
+                    selectedTab = selectedTab, onTabSelected = { selectedTab = it },
+                    language = language, onLanguageChange = { language = it },
+                    entries = accountingEntries, reports = savedReports,
+                    submittedEntries = submittedEntries
+                )
+            }
         }
     }
 }
@@ -188,9 +225,9 @@ fun LoadingScreen() { Box(Modifier.fillMaxSize().background(AppColors.Background
 fun RetryScreen(onRetry: () -> Unit) {
     Box(Modifier.fillMaxSize().background(AppColors.DarkBackground), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Could not load network resources", color = Color(0xFFD0D0D0), fontSize = 16.sp)
+            Text(stringResource(R.string.network_error), color = Color(0xFFD0D0D0), fontSize = 16.sp)
             Spacer(Modifier.height(20.dp))
-            Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.RetryBlue)) { Text("Retry", fontWeight = FontWeight.Bold) }
+            Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.RetryBlue)) { Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -202,7 +239,6 @@ fun MainContent(
     onTabSelected: (Int) -> Unit,
     language: String,
     onLanguageChange: (String) -> Unit,
-    translation: String,
     entries: MutableList<AccountingEntry>,
     reports: MutableList<SavedReport>,
     submittedEntries: MutableList<SubmittedEntry>
@@ -216,7 +252,6 @@ fun MainContent(
     var tableFilters by remember { mutableStateOf(listOf<FilterCondition>()) }
     var tableSortConfig by remember { mutableStateOf(SortConfig()) }
     val context = LocalContext.current
-    val isSpanish = language == "es"
 
     // ── Email result feedback dialog ──────────────────────────────────────────
     // ── Email result feedback dialog ──────────────────────────────────────────
@@ -232,29 +267,21 @@ fun MainContent(
             },
             title = {
                 Text(
-                    when {
-                        result is EmailResult.Success && isSpanish -> "Borrador Creado"
-                        result is EmailResult.Success -> "Draft Created"
-                        isSpanish -> "Error al Abrir"
-                        else -> "Failed to Open"
-                    }
+                    if (result is EmailResult.Success) stringResource(R.string.email_draft_created)
+                    else stringResource(R.string.email_open_failed)
                 )
             },
             text = {
                 Text(
                     when (result) {
-                        is EmailResult.Success ->
-                            if (isSpanish) "Se ha abierto su aplicación de correo. Por favor, presione 'Enviar' allí."
-                            else "Your email app has been opened. Please press 'Send' inside the app."
-                        is EmailResult.Failure ->
-                            if (isSpanish) "No se pudo preparar el correo: ${result.message}"
-                            else "Could not prepare email: ${result.message}"
+                        is EmailResult.Success -> stringResource(R.string.email_draft_message)
+                        is EmailResult.Failure -> stringResource(R.string.email_prepare_failed, result.message)
                     }
                 )
             },
             confirmButton = {
                 Button(onClick = { emailResultDialogState = null }) {
-                    Text(if (isSpanish) "Entendido" else "Got it")
+                    Text(stringResource(R.string.got_it))
                 }
             }
         )
@@ -263,21 +290,23 @@ fun MainContent(
     // ── Email address input dialog ────────────────────────────────────────────
     if (reportToEmail != null) {
         var emailInput by remember { mutableStateOf("") }
-        var emailError by remember { mutableStateOf<String?>(null) }
+        var emailInvalid by remember { mutableStateOf(false) }
 
         AlertDialog(
             onDismissRequest = { reportToEmail = null; entriesToEmail = null },
-            title = { Text(if (isSpanish) "Enviar por Correo" else "Send via Email") },
+            title = { Text(stringResource(R.string.send_via_email)) },
             text = {
                 Column {
-                    Text(if (isSpanish) "Ingrese su dirección de correo electrónico:" else "Enter your email address:")
+                    Text(stringResource(R.string.enter_email))
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = emailInput,
-                        onValueChange = { emailInput = it; emailError = null },
-                        label = { Text("Email") },
-                        isError = emailError != null,
-                        supportingText = emailError?.let { { Text(it, color = AppColors.ErrorRed) } },
+                        onValueChange = { emailInput = it; emailInvalid = false },
+                        label = { Text(stringResource(R.string.email_label)) },
+                        isError = emailInvalid,
+                        supportingText = if (emailInvalid) {
+                            { Text(stringResource(R.string.invalid_email), color = AppColors.ErrorRed) }
+                        } else null,
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
@@ -288,7 +317,7 @@ fun MainContent(
                     // Basic email validation
                     val trimmed = emailInput.trim()
                     if (trimmed.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(trimmed).matches()) {
-                        emailError = if (isSpanish) "Correo inválido" else "Invalid email address"
+                        emailInvalid = true
                         return@Button
                     }
                     reportToEmail?.let { report ->
@@ -304,12 +333,12 @@ fun MainContent(
                     reportToEmail = null
                     entriesToEmail = null
                 }) {
-                    Text(if (isSpanish) "Enviar" else "Send")
+                    Text(stringResource(R.string.send))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { reportToEmail = null; entriesToEmail = null }) {
-                    Text(if (isSpanish) "Cancelar" else "Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -318,39 +347,37 @@ fun MainContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
-    Row(verticalAlignment = Alignment.CenterVertically) { 
-        Image(
-            painter = painterResource(id = R.drawable.ripple_logo), // Make sure this matches your file name
-            contentDescription = "Ripple Effect Logo",
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = "Ripple Effect", 
-            fontWeight = FontWeight.SemiBold, 
-            fontSize = 18.sp
-        ) 
-    } 
-},
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ripple_logo), // Make sure this matches your file name
+                            contentDescription = stringResource(R.string.logo_description),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp
+                        )
+                    }
+                },
                 actions = { Box(Modifier.padding(end = 16.dp).size(32.dp).clip(CircleShape).background(AppColors.UserIconBg), contentAlignment = Alignment.Center) { Text("e", color = AppColors.UserIconText, fontWeight = FontWeight.Bold) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Surface)
             )
         },
         bottomBar = {
             NavigationBar(containerColor = AppColors.Surface, tonalElevation = 0.dp) {
-                NavigationBarItem(icon = { Icon(Icons.Default.List, null) }, label = { Text(if (isSpanish) "Informe" else "Report") }, selected = selectedTab == 0, onClick = { onTabSelected(0) })
-                NavigationBarItem(icon = { Icon(Icons.Default.Folder, null) }, label = { Text(if (isSpanish) "Tabla" else "Categories") }, selected = selectedTab == 1, onClick = { onTabSelected(1) })
+                NavigationBarItem(icon = { Icon(Icons.Default.List, null) }, label = { Text(stringResource(R.string.report)) }, selected = selectedTab == 0, onClick = { onTabSelected(0) })
+                NavigationBarItem(icon = { Icon(Icons.Default.Folder, null) }, label = { Text(stringResource(R.string.tab_categories)) }, selected = selectedTab == 1, onClick = { onTabSelected(1) })
             }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize().background(AppColors.Background)) {
             when (selectedTab) {
                 0 -> WaterSalesAccountingScreen(
-                    isSpanish = isSpanish,
                     language = language,
                     onLanguageChange = onLanguageChange,
-                    translation = translation,
                     entries = entries,
                     onReportSubmit = { newReport, currentEntries, currency ->
                         reports.add(0, newReport)
@@ -372,7 +399,6 @@ fun MainContent(
                     }
                 )
                 1 -> DataTableScreen(
-                    isSpanish = isSpanish,
                     submittedEntries = submittedEntries,
                     filters = tableFilters,
                     onFiltersChanged = { tableFilters = it },
@@ -392,13 +418,12 @@ fun MainContent(
 // ==================== FEATURE: WATER SALES ACCOUNTING (ITEMS TAB) ====================
 @Composable
 fun WaterSalesAccountingScreen(
-    isSpanish: Boolean,
     language: String,
     onLanguageChange: (String) -> Unit,
-    translation: String,
     entries: MutableList<AccountingEntry>,
     onReportSubmit: (SavedReport, List<AccountingEntry>, Currency) -> Unit
 ) {
+    val context = LocalContext.current
     var selectedCurrency by remember { mutableStateOf(Currency.USD) }
     val cost = entries.filter { it.isExpense }.sumOf { it.amount }
     val income = entries.filter { !it.isExpense }.sumOf { it.amount }
@@ -409,33 +434,47 @@ fun WaterSalesAccountingScreen(
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (isSpanish) "Español" else "English", color = AppColors.TextSecondary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                var menuOpen by remember { mutableStateOf(false) }
+                val current = AppLanguage.fromTag(language)
+                Box {
+                    OutlinedButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Default.Language, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(current.nativeName)
+                        Icon(Icons.Default.ArrowDropDown, null)
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        AppLanguage.entries.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text(lang.nativeName) },
+                                onClick = { onLanguageChange(lang.tag); menuOpen = false },
+                                leadingIcon = if (lang == current) {
+                                    { Icon(Icons.Default.Check, null, tint = AppColors.Primary) }
+                                } else null
+                            )
+                        }
+                    }
+                }
                 Spacer(Modifier.width(12.dp))
-                Switch(
-                    checked = isSpanish,
-                    onCheckedChange = { onLanguageChange(if (it) "es" else "en") },
-                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = AppColors.Accent, uncheckedThumbColor = Color.White, uncheckedTrackColor = Color(0xFFE0E0E0))
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(translation, color = AppColors.TextSecondary, fontSize = 14.sp)
+                Text(stringResource(R.string.greeting), color = AppColors.TextSecondary, fontSize = 14.sp)
             }
         }
-        item { Text(if (isSpanish) "Contabilidad de Ventas de Agua" else "Water Sales Accounting", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary) }
+        item { Text(stringResource(R.string.water_sales_title), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary) }
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AccountingSummaryCard(Modifier.weight(1f), if (isSpanish) "Costos" else "Costs", cost, selectedCurrency, Color(0xFFFEE2E2), Color(0xFF991B1B))
-                AccountingSummaryCard(Modifier.weight(1f), if (isSpanish) "Ingresos" else "Profit", income, selectedCurrency, Color(0xFFDCFCE7), Color(0xFF166534))
+                AccountingSummaryCard(Modifier.weight(1f), stringResource(R.string.costs), cost, selectedCurrency, isExpense = true, Color(0xFFFEE2E2), Color(0xFF991B1B))
+                AccountingSummaryCard(Modifier.weight(1f), stringResource(R.string.profit), income, selectedCurrency, isExpense = false, Color(0xFFDCFCE7), Color(0xFF166534))
             }
         }
         item {
             Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(if (isSpanish) "Seleccionar Moneda" else "Select Currency", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(stringResource(R.string.select_currency), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(12.dp))
                     Currency.values().forEach { curr ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { selectedCurrency = curr }.padding(vertical = 4.dp)) {
                             RadioButton(selected = selectedCurrency == curr, onClick = { selectedCurrency = curr })
-                            Text("${curr.symbol} ${curr.code} (${if (isSpanish) curr.nameEs else curr.nameEn})", fontSize = 14.sp)
+                            Text("${curr.symbol} ${curr.code} (${stringResource(curr.nameRes)})", fontSize = 14.sp)
                         }
                     }
                 }
@@ -444,17 +483,17 @@ fun WaterSalesAccountingScreen(
         item {
             Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(if (isSpanish) "Registro de Datos" else "Data Entry", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(stringResource(R.string.data_entry), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(value = entryType, onValueChange = { entryType = it }, label = { Text(if (isSpanish) "Descripción" else "Description") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = entryAmount, onValueChange = { entryAmount = it }, label = { Text(if (isSpanish) "Cantidad" else "Amount") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                    OutlinedTextField(value = entryType, onValueChange = { entryType = it }, label = { Text(stringResource(R.string.description)) }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = entryAmount, onValueChange = { entryAmount = it }, label = { Text(stringResource(R.string.amount)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                     Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { if (entryType.isNotBlank()) { entries.add(AccountingEntry(type = entryType, amount = entryAmount.toDoubleOrNull() ?: 0.0, isExpense = true)); entryType = ""; entryAmount = "" } }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.ErrorRed), modifier = Modifier.weight(1f)) { Text(if (isSpanish) "+ Gasto" else "+ Expense") }
-                        Button(onClick = { if (entryType.isNotBlank()) { entries.add(AccountingEntry(type = entryType, amount = entryAmount.toDoubleOrNull() ?: 0.0, isExpense = false)); entryType = ""; entryAmount = "" } }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.SuccessGreen), modifier = Modifier.weight(1f)) { Text(if (isSpanish) "+ Venta" else "+ Sale") }
+                        Button(onClick = { if (entryType.isNotBlank()) { entries.add(AccountingEntry(type = entryType, amount = entryAmount.toDoubleOrNull() ?: 0.0, isExpense = true)); entryType = ""; entryAmount = "" } }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.ErrorRed), modifier = Modifier.weight(1f)) { Text(stringResource(R.string.add_expense)) }
+                        Button(onClick = { if (entryType.isNotBlank()) { entries.add(AccountingEntry(type = entryType, amount = entryAmount.toDoubleOrNull() ?: 0.0, isExpense = false)); entryType = ""; entryAmount = "" } }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.SuccessGreen), modifier = Modifier.weight(1f)) { Text(stringResource(R.string.add_sale)) }
                     }
                     if (entries.isNotEmpty()) {
                         Spacer(Modifier.height(24.dp))
-                        Text(if (isSpanish) "Registros Recientes" else "Recent Records", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.recent_records), fontWeight = FontWeight.Bold)
                         entries.forEach { entry ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(entry.type, Modifier.weight(1f), fontSize = 14.sp)
@@ -471,16 +510,16 @@ fun WaterSalesAccountingScreen(
             Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (isSpanish) "Informe" else "Report", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        OutlinedButton(onClick = {}) { Icon(Icons.Default.Print, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(if (isSpanish) "Imprimir" else "Print") }
+                        Text(stringResource(R.string.report), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        OutlinedButton(onClick = {}) { Icon(Icons.Default.Print, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.print)) }
                     }
                     Spacer(Modifier.height(16.dp))
                     Column(Modifier.fillMaxWidth().background(AppColors.CardBackground, RoundedCornerShape(8.dp)).padding(16.dp)) {
-                        ReportRow(if (isSpanish) "Costos Totales:" else "Total Costs:", "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", cost)}")
-                        ReportRow(if (isSpanish) "Ingresos Totales:" else "Total Profit:", "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income)}")
-                        ReportRow(if (isSpanish) "Beneficio Neto:" else "Net Benefit:", "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income - cost)}")
+                        ReportRow(stringResource(R.string.total_costs_label), "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", cost)}")
+                        ReportRow(stringResource(R.string.total_profit_label), "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income)}")
+                        ReportRow(stringResource(R.string.net_benefit_label), "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income - cost)}")
                         if (entries.isNotEmpty()) {
-                            Spacer(Modifier.height(16.dp)); Text(if (isSpanish) "Desglose" else "Breakdown", fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(16.dp)); Text(stringResource(R.string.breakdown), fontWeight = FontWeight.Bold)
                             entries.forEach { entry -> Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(entry.type, fontSize = 12.sp, color = AppColors.TextSecondary); Text("${if (entry.isExpense) "-" else "+"}${selectedCurrency.symbol}${entry.amount}", fontSize = 12.sp, color = if (entry.isExpense) AppColors.ErrorRed else AppColors.SuccessGreen) } }
                         }
                     }
@@ -490,35 +529,28 @@ fun WaterSalesAccountingScreen(
         item {
             Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(if (isSpanish) "Resumen del Informe (opcional)" else "Summary Report (optional)", fontWeight = FontWeight.Bold)
-                    OutlinedTextField(value = summaryReport, onValueChange = { summaryReport = it }, placeholder = { Text(if (isSpanish) "Escriba su informe de resumen aquí..." else "Write your summary report here...") }, modifier = Modifier.fillMaxWidth().height(100.dp).padding(top = 8.dp))
+                    Text(stringResource(R.string.summary_optional), fontWeight = FontWeight.Bold)
+                    OutlinedTextField(value = summaryReport, onValueChange = { summaryReport = it }, placeholder = { Text(stringResource(R.string.summary_placeholder)) }, modifier = Modifier.fillMaxWidth().height(100.dp).padding(top = 8.dp))
                 }
             }
         }
         item {
             Button(
                 onClick = {
+                    // onClick isn't @Composable, so use context.getString instead of stringResource
+                    fun money(value: Double) = "${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", value)}"
                     val reportContent = buildString {
-                        if (isSpanish) {
-                            append("Resumen de Contabilidad:\n")
-                            append("Costos Totales: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", cost)}\n")
-                            append("Ingresos Totales: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income)}\n")
-                            append("Neto: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income - cost)}\n\n")
-                            append("Desglose:\n")
-                            entries.forEach { append("- ${it.type}: ${if (it.isExpense) "-" else "+"}${selectedCurrency.symbol}${it.amount}\n") }
-                            append("\nResumen del Usuario:\n$summaryReport")
-                        } else {
-                            append("Accounting Summary:\n")
-                            append("Total Costs: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", cost)}\n")
-                            append("Total Profit: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income)}\n")
-                            append("Net: ${selectedCurrency.symbol}${String.format(Locale.US, "%.2f", income - cost)}\n\n")
-                            append("Breakdown:\n")
-                            entries.forEach { append("- ${it.type}: ${if (it.isExpense) "-" else "+"}${selectedCurrency.symbol}${it.amount}\n") }
-                            append("\nUser Summary:\n$summaryReport")
-                        }
+                        append(context.getString(R.string.report_content_header)).append("\n")
+                        append(context.getString(R.string.report_total_costs, money(cost))).append("\n")
+                        append(context.getString(R.string.report_total_profit, money(income))).append("\n")
+                        append(context.getString(R.string.report_net, money(income - cost))).append("\n\n")
+                        append(context.getString(R.string.report_breakdown)).append("\n")
+                        entries.forEach { append("- ${it.type}: ${if (it.isExpense) "-" else "+"}${selectedCurrency.symbol}${it.amount}\n") }
+                        append("\n").append(context.getString(R.string.report_user_summary)).append("\n").append(summaryReport)
                     }
+                    val datePart = SimpleDateFormat(context.getString(R.string.report_date_pattern), Locale.US).format(Date())
                     val newReport = SavedReport(
-                        name = if (isSpanish) "Informe ${SimpleDateFormat("dd-MM-yy", Locale.US).format(Date())}" else "Report ${SimpleDateFormat("MM-dd-yy", Locale.US).format(Date())}",
+                        name = context.getString(R.string.report_name, datePart),
                         dateCreated = Date(),
                         status = ReportStatus.COMPLETED,
                         owner = "Current User",
@@ -530,7 +562,7 @@ fun WaterSalesAccountingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
                 shape = RoundedCornerShape(8.dp)
-            ) { Text(if (isSpanish) "Enviar Informe" else "Submit Report") }
+            ) { Text(stringResource(R.string.submit_report)) }
         }
     }
 }
@@ -601,11 +633,11 @@ fun sendEmailWithReport(
 
         intent.apply {
             putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
-            putExtra(Intent.EXTRA_SUBJECT, "Ripple Effect Report: ${report.name}")
-            putExtra(Intent.EXTRA_TEXT, "Please find attached the report for ${report.name}.")
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.email_subject, report.name))
+            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.email_body, report.name))
         }
 
-        val chooser = Intent.createChooser(intent, "Send Email...")
+        val chooser = Intent.createChooser(intent, context.getString(R.string.email_chooser_title))
         chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         if (context !is android.app.Activity) {
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -627,15 +659,16 @@ fun sendEmailWithReport(
         EmailResult.Failure(e.localizedMessage ?: "Unknown error. Ensure FileProvider is configured.")
     }
 }
+
 @Composable
-fun AccountingSummaryCard(modifier: Modifier, title: String, amount: Double, currency: Currency, bgColor: Color, textColor: Color) {
+fun AccountingSummaryCard(modifier: Modifier, title: String, amount: Double, currency: Currency, isExpense: Boolean, bgColor: Color, textColor: Color) {
     Card(modifier = modifier, border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(title, fontSize = 14.sp, color = AppColors.TextSecondary)
             Text("${currency.symbol}${String.format(Locale.US, "%.2f", amount)}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Box(Modifier.background(bgColor, RoundedCornerShape(16.dp)).padding(horizontal = 10.dp, vertical = 4.dp)) {
-                Text(if (title == "Costs" || title == "Costos") "Expenses" else "Income", fontSize = 12.sp, color = textColor, fontWeight = FontWeight.Medium)
+                Text(stringResource(if (isExpense) R.string.badge_expenses else R.string.badge_income), fontSize = 12.sp, color = textColor, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -648,12 +681,13 @@ fun ReportRow(label: String, value: String) {
 
 // ==================== FEATURE: CATEGORIES WITH ADVANCED EDITOR ====================
 @Composable
-fun CategoriesWithReportsScreen(isSpanish: Boolean, reports: MutableList<SavedReport>, onReportCompleted: (SavedReport) -> Unit) {
+fun CategoriesWithReportsScreen(reports: MutableList<SavedReport>, onReportCompleted: (SavedReport) -> Unit) {
+    val context = LocalContext.current
     var selectedReport by remember { mutableStateOf<SavedReport?>(null) }
     var reportToDelete by remember { mutableStateOf<SavedReport?>(null) }
 
     if (selectedReport != null) {
-        ReportEditorView(report = selectedReport!!, isSpanish = isSpanish,
+        ReportEditorView(report = selectedReport!!,
             onExit = { if (selectedReport!!.status != ReportStatus.COMPLETED) selectedReport!!.status = ReportStatus.IN_PROGRESS; selectedReport = null },
             onComplete = {
                 selectedReport!!.status = ReportStatus.COMPLETED
@@ -663,34 +697,34 @@ fun CategoriesWithReportsScreen(isSpanish: Boolean, reports: MutableList<SavedRe
         )
     } else {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            Button(onClick = { val newReport = SavedReport(name = if (isSpanish) "Informe sin título" else "Untitled Report", dateCreated = Date(), status = ReportStatus.IN_PROGRESS, owner = "Current User"); reports.add(0, newReport); selectedReport = newReport },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp), colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text(if (isSpanish) "Nuevo Informe" else "Add New Report") }
-            Text(if (isSpanish) "Informes Guardados" else "Saved Reports", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) { items(reports) { report -> ReportCardItem(report = report, isSpanish = isSpanish, onClick = { selectedReport = report }, onLongClick = { reportToDelete = report }) } }
+            Button(onClick = { val newReport = SavedReport(name = context.getString(R.string.untitled_report), dateCreated = Date(), status = ReportStatus.IN_PROGRESS, owner = "Current User"); reports.add(0, newReport); selectedReport = newReport },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp), colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.add_new_report)) }
+            Text(stringResource(R.string.saved_reports), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) { items(reports) { report -> ReportCardItem(report = report, onClick = { selectedReport = report }, onLongClick = { reportToDelete = report }) } }
         }
     }
     if (reportToDelete != null) {
-        AlertDialog(onDismissRequest = { reportToDelete = null }, title = { Text(if (isSpanish) "Eliminar Informe" else "Delete Report") },
-            text = { Text(if (isSpanish) "ADVERTENCIA: ¿Está seguro de que desea eliminar este informe para siempre? No podrá recuperarlo." else "WARNING: Are you sure you want to delete this report forever? You can never retrieve it again.") },
-            confirmButton = { TextButton(onClick = { reports.remove(reportToDelete); reportToDelete = null }) { Text(if (isSpanish) "ELIMINAR" else "DELETE", color = AppColors.ErrorRed) } },
-            dismissButton = { TextButton(onClick = { reportToDelete = null }) { Text(if (isSpanish) "CANCELAR" else "CANCEL") } }
+        AlertDialog(onDismissRequest = { reportToDelete = null }, title = { Text(stringResource(R.string.delete_report)) },
+            text = { Text(stringResource(R.string.delete_report_warning)) },
+            confirmButton = { TextButton(onClick = { reports.remove(reportToDelete); reportToDelete = null }) { Text(stringResource(R.string.delete_caps), color = AppColors.ErrorRed) } },
+            dismissButton = { TextButton(onClick = { reportToDelete = null }) { Text(stringResource(R.string.cancel_caps)) } }
         )
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ReportCardItem(report: SavedReport, isSpanish: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun ReportCardItem(report: SavedReport, onClick: () -> Unit, onLongClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick), border = BorderStroke(1.dp, AppColors.Border), colors = CardDefaults.cardColors(containerColor = AppColors.Surface)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) { Text(report.name, fontWeight = FontWeight.Bold); Text(report.owner, fontSize = 12.sp, color = AppColors.TextSecondary) }
-            StatusBadge(report.status, isSpanish)
+            StatusBadge(report.status)
         }
     }
 }
 
 @Composable
-fun ReportEditorView(report: SavedReport, isSpanish: Boolean, onExit: () -> Unit, onComplete: () -> Unit) {
+fun ReportEditorView(report: SavedReport, onExit: () -> Unit, onComplete: () -> Unit) {
     var isEditMode by remember { mutableStateOf(report.status == ReportStatus.IN_PROGRESS && report.content.isEmpty()) }
     var reportName by remember { mutableStateOf(report.name) }
     var reportContent by remember { mutableStateOf(report.content) }
@@ -702,12 +736,12 @@ fun ReportEditorView(report: SavedReport, isSpanish: Boolean, onExit: () -> Unit
     Column(modifier = Modifier.fillMaxSize().background(AppColors.Background)) {
         Surface(modifier = Modifier.fillMaxWidth(), color = if (isEditMode) AppColors.Blue100 else AppColors.Gray50, shadowElevation = 2.dp) {
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = if (isEditMode) (if (isSpanish) "Modo Edición Activado" else "Editing Enabled") else (if (isSpanish) "¿Habilitar edición?" else "Enable editing?"), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text(text = stringResource(if (isEditMode) R.string.editing_enabled else R.string.enable_editing), fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { /* Print logic */ }) { Icon(Icons.Default.Print, null, tint = AppColors.TextPrimary) }
                     Spacer(Modifier.width(8.dp))
-                    if (!isEditMode) { Button(onClick = { isEditMode = true }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) { Text(if (isSpanish) "Editar" else "Edit") } }
-                    else { TextButton(onClick = { isEditMode = false }) { Text(if (isSpanish) "Ver" else "View") } }
+                    if (!isEditMode) { Button(onClick = { isEditMode = true }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) { Text(stringResource(R.string.edit)) } }
+                    else { TextButton(onClick = { isEditMode = false }) { Text(stringResource(R.string.view)) } }
                 }
             }
         }
@@ -724,24 +758,34 @@ fun ReportEditorView(report: SavedReport, isSpanish: Boolean, onExit: () -> Unit
         }
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp)) {
             if (isEditMode) {
-                OutlinedTextField(value = reportName, onValueChange = { reportName = it; report.name = it }, label = { Text(if (isSpanish) "Título del informe" else "Report Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = reportName, onValueChange = { reportName = it; report.name = it }, label = { Text(stringResource(R.string.report_title_label)) }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(16.dp))
-                OutlinedTextField(value = reportContent, onValueChange = { reportContent = it; report.content = it }, placeholder = { Text(if (isSpanish) "Empieza a escribir..." else "Start typing your report...") }, modifier = Modifier.fillMaxWidth().heightIn(min = 400.dp),
+                OutlinedTextField(value = reportContent, onValueChange = { reportContent = it; report.content = it }, placeholder = { Text(stringResource(R.string.report_body_placeholder)) }, modifier = Modifier.fillMaxWidth().heightIn(min = 400.dp),
                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = fontSize.sp, fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal, fontStyle = if (isItalic) FontStyle.Italic else FontStyle.Normal, textDecoration = if (isUnderline) TextDecoration.Underline else TextDecoration.None))
             } else { Text(reportName, fontSize = 24.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(16.dp)); Text(reportContent, fontSize = fontSize.sp) }
         }
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onExit, modifier = Modifier.weight(1f)) { Text(if (isSpanish) "Atrás" else "Back") }
-            Button(onClick = onComplete, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppColors.SuccessGreen)) { Text(if (isSpanish) "Publicar" else "Complete") }
+            OutlinedButton(onClick = onExit, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.back)) }
+            Button(onClick = onComplete, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = AppColors.SuccessGreen)) { Text(stringResource(R.string.complete)) }
         }
     }
 }
 
 @Composable
-fun StatusBadge(status: ReportStatus, isSpanish: Boolean) {
+fun StatusBadge(status: ReportStatus) {
     val color = if (status == ReportStatus.COMPLETED) AppColors.SuccessGreen else AppColors.WarningYellow
-    Box(Modifier.background(color.copy(0.1f), RoundedCornerShape(16.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) { Text(if (isSpanish) (if (status == ReportStatus.COMPLETED) "Completado" else "En Progreso") else status.name, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+    val label = when (status) {
+        ReportStatus.COMPLETED -> R.string.status_completed
+        ReportStatus.IN_PROGRESS -> R.string.status_in_progress
+        ReportStatus.DRAFT -> R.string.status_draft
+    }
+    Box(Modifier.background(color.copy(0.1f), RoundedCornerShape(16.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) { Text(stringResource(label), color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
 }
+
+// stored type stays "Expense"/"Sale"; this is only for showing it on screen
+@Composable
+fun typeLabel(type: String): String =
+    stringResource(if (type == "Expense") R.string.type_expense else R.string.type_sale)
 
 // ==================== FEATURE: DATA TABLE (REPORTS TAB) ====================
 
@@ -815,9 +859,9 @@ fun applySorting(entries: List<SubmittedEntry>, cfg: SortConfig): List<Submitted
     return if (cfg.direction == SortDirection.ASCENDING) entries.sortedWith(cmp) else entries.sortedWith(cmp.reversed())
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DataTableScreen(
-    isSpanish: Boolean,
     submittedEntries: List<SubmittedEntry>,
     filters: List<FilterCondition>,
     onFiltersChanged: (List<FilterCondition>) -> Unit,
@@ -825,6 +869,7 @@ fun DataTableScreen(
     onSortConfigChanged: (SortConfig) -> Unit,
     onEmailRequest: (SavedReport, List<AccountingEntry>, Currency) -> Unit
 ) {
+    val context = LocalContext.current
     var showFilters by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.US) }
     val filteredEntries = applyFilters(submittedEntries, filters)
@@ -834,12 +879,12 @@ fun DataTableScreen(
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         // Title row
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(if (isSpanish) "Tabla de Datos" else "Data Table", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.data_table_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { showFilters = !showFilters }) {
                     Icon(Icons.Default.FilterList, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(if (isSpanish) "Filtrar" else "Filter")
+                    Text(stringResource(R.string.filter))
                     if (filters.any { it.value.isNotBlank() }) {
                         Spacer(Modifier.width(4.dp))
                         Box(Modifier.size(20.dp).background(AppColors.Primary, CircleShape), contentAlignment = Alignment.Center) {
@@ -851,18 +896,19 @@ fun DataTableScreen(
                     onClick = {
                         if (sortedEntries.isNotEmpty()) {
                             val reportContent = buildString {
-                                append(if (isSpanish) "Exportación de Tabla de Datos\n" else "Data Table Export\n")
-                                append("${if (isSpanish) "Generado" else "Generated"}: ${dateFormat.format(Date())}\n")
-                                append("${if (isSpanish) "Registros" else "Records"}: ${sortedEntries.size}\n\n")
+                                append(context.getString(R.string.export_header)).append("\n")
+                                append(context.getString(R.string.export_generated, dateFormat.format(Date()))).append("\n")
+                                append(context.getString(R.string.export_records, sortedEntries.size)).append("\n\n")
                                 sortedEntries.forEach { e ->
                                     append("${e.description} | ${e.currency.symbol}${String.format(Locale.US, "%.2f", e.amount)} | ${e.currency.code} | ${e.type} | ${dateFormat.format(e.dateCreated)}\n")
                                 }
                             }
+                            val datePart = SimpleDateFormat(context.getString(R.string.report_date_pattern), Locale.US).format(Date())
                             val report = SavedReport(
-                                name = if (isSpanish) "Exportación-${SimpleDateFormat("dd-MM-yy", Locale.US).format(Date())}" else "Export-${SimpleDateFormat("MM-dd-yy", Locale.US).format(Date())}",
+                                name = context.getString(R.string.export_name, datePart),
                                 dateCreated = Date(), status = ReportStatus.COMPLETED, owner = "Current User", content = reportContent
                             )
-                            val acctEntries = sortedEntries.map { AccountingEntry(type = it.description, amount = it.amount, isExpense = it.type == "Expense" || it.type == "Gasto") }
+                            val acctEntries = sortedEntries.map { AccountingEntry(type = it.description, amount = it.amount, isExpense = it.type == "Expense") }
                             val currency = sortedEntries.firstOrNull()?.currency ?: Currency.USD
                             onEmailRequest(report, acctEntries, currency)
                         }
@@ -871,7 +917,7 @@ fun DataTableScreen(
                 ) {
                     Icon(Icons.Default.Email, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(if (isSpanish) "Correo" else "Email")
+                    Text(stringResource(R.string.email_button))
                 }
             }
         }
@@ -880,12 +926,12 @@ fun DataTableScreen(
 
         // Filters
         AnimatedVisibility(visible = showFilters) {
-            FilterSection(isSpanish = isSpanish, filters = filters, onFiltersChanged = onFiltersChanged)
+            FilterSection(filters = filters, onFiltersChanged = onFiltersChanged)
         }
 
         // Record count
         Text(
-            "${sortedEntries.size} ${if (isSpanish) "registros" else "records"}",
+            pluralStringResource(R.plurals.record_count, sortedEntries.size, sortedEntries.size),
             fontSize = 12.sp, color = AppColors.TextSecondary, modifier = Modifier.padding(vertical = 8.dp)
         )
 
@@ -894,8 +940,8 @@ fun DataTableScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.GridOn, null, Modifier.size(48.dp), tint = AppColors.TextSecondary)
                     Spacer(Modifier.height(12.dp))
-                    Text(if (isSpanish) "No hay datos aún" else "No data yet", color = AppColors.TextSecondary, fontSize = 16.sp)
-                    Text(if (isSpanish) "Envíe un informe en la pestaña Artículos" else "Submit a report in the Items tab", color = AppColors.TextSecondary, fontSize = 13.sp)
+                    Text(stringResource(R.string.no_data_yet), color = AppColors.TextSecondary, fontSize = 16.sp)
+                    Text(stringResource(R.string.no_data_hint), color = AppColors.TextSecondary, fontSize = 13.sp)
                 }
             }
         } else {
@@ -910,11 +956,11 @@ fun DataTableScreen(
                         Modifier.fillMaxWidth().horizontalScroll(horizontalScrollState)
                             .background(AppColors.Gray50).padding(vertical = 6.dp)
                     ) {
-                        SortableColumnHeader(if (isSpanish) "Descripción" else "Description", FilterField.DESCRIPTION, sortConfig, onSortConfigChanged, 140.dp, isSpanish)
-                        SortableColumnHeader(if (isSpanish) "Cantidad" else "Amount", FilterField.AMOUNT, sortConfig, onSortConfigChanged, 100.dp, isSpanish)
-                        SortableColumnHeader(if (isSpanish) "Moneda" else "Currency", FilterField.CURRENCY, sortConfig, onSortConfigChanged, 85.dp, isSpanish)
-                        SortableColumnHeader(if (isSpanish) "Tipo" else "Type", FilterField.TYPE, sortConfig, onSortConfigChanged, 85.dp, isSpanish)
-                        SortableColumnHeader(if (isSpanish) "Fecha" else "Date", FilterField.DATE, sortConfig, onSortConfigChanged, 130.dp, isSpanish)
+                        SortableColumnHeader(stringResource(R.string.description), FilterField.DESCRIPTION, sortConfig, onSortConfigChanged, 140.dp)
+                        SortableColumnHeader(stringResource(R.string.amount), FilterField.AMOUNT, sortConfig, onSortConfigChanged, 100.dp)
+                        SortableColumnHeader(stringResource(R.string.currency), FilterField.CURRENCY, sortConfig, onSortConfigChanged, 85.dp)
+                        SortableColumnHeader(stringResource(R.string.type), FilterField.TYPE, sortConfig, onSortConfigChanged, 85.dp)
+                        SortableColumnHeader(stringResource(R.string.date), FilterField.DATE, sortConfig, onSortConfigChanged, 130.dp)
                     }
                     HorizontalDivider(color = AppColors.Border, thickness = 1.dp)
 
@@ -922,7 +968,7 @@ fun DataTableScreen(
                     if (sortedEntries.isEmpty()) {
                         Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Text(
-                                if (isSpanish) "No hay resultados con estos filtros" else "No results match the current filters",
+                                stringResource(R.string.no_filter_results),
                                 color = AppColors.TextSecondary, fontSize = 14.sp
                             )
                         }
@@ -944,7 +990,7 @@ fun DataTableScreen(
                                     Box(Modifier.width(85.dp).padding(horizontal = 12.dp)) {
                                         val tc = if (entry.type == "Expense") AppColors.ErrorRed else AppColors.SuccessGreen
                                         Box(Modifier.background(tc.copy(0.1f), RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                                            Text(entry.type, fontSize = 11.sp, color = tc, fontWeight = FontWeight.Medium)
+                                            Text(typeLabel(entry.type), fontSize = 11.sp, color = tc, fontWeight = FontWeight.Medium)
                                         }
                                     }
                                     Text(
@@ -966,7 +1012,7 @@ fun DataTableScreen(
 @Composable
 fun SortableColumnHeader(
     label: String, field: FilterField, sortConfig: SortConfig,
-    onSortChanged: (SortConfig) -> Unit, width: Dp, isSpanish: Boolean
+    onSortChanged: (SortConfig) -> Unit, width: Dp
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val active = sortConfig.field == field
@@ -981,14 +1027,14 @@ fun SortableColumnHeader(
         }
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
             DropdownMenuItem(
-                text = { Text(if (isSpanish) "↑ Ascendente" else "↑ Ascending") },
+                text = { Text(stringResource(R.string.sort_ascending)) },
                 onClick = { onSortChanged(SortConfig(field, SortDirection.ASCENDING)); showMenu = false },
                 leadingIcon = if (active && sortConfig.direction == SortDirection.ASCENDING) {
                     { Icon(Icons.Default.Check, null, tint = AppColors.Primary) }
                 } else null
             )
             DropdownMenuItem(
-                text = { Text(if (isSpanish) "↓ Descendente" else "↓ Descending") },
+                text = { Text(stringResource(R.string.sort_descending)) },
                 onClick = { onSortChanged(SortConfig(field, SortDirection.DESCENDING)); showMenu = false },
                 leadingIcon = if (active && sortConfig.direction == SortDirection.DESCENDING) {
                     { Icon(Icons.Default.Check, null, tint = AppColors.Primary) }
@@ -999,7 +1045,7 @@ fun SortableColumnHeader(
 }
 
 @Composable
-fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersChanged: (List<FilterCondition>) -> Unit) {
+fun FilterSection(filters: List<FilterCondition>, onFiltersChanged: (List<FilterCondition>) -> Unit) {
     Card(
         Modifier.fillMaxWidth().padding(bottom = 12.dp),
         border = BorderStroke(1.dp, AppColors.Border),
@@ -1014,7 +1060,7 @@ fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersC
                 ) {
                     Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(if (isSpanish) "Agregar Filtro" else "Add Filter")
+                    Text(stringResource(R.string.add_filter))
                 }
             } else {
                 filters.forEachIndexed { index, condition ->
@@ -1031,7 +1077,7 @@ fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersC
                                 ),
                                 modifier = Modifier.height(32.dp)
                             ) {
-                                Text("AND", fontSize = 12.sp, fontWeight = if (isAnd) FontWeight.Bold else FontWeight.Normal, color = if (isAnd) AppColors.Primary else AppColors.TextSecondary)
+                                Text(stringResource(R.string.filter_and), fontSize = 12.sp, fontWeight = if (isAnd) FontWeight.Bold else FontWeight.Normal, color = if (isAnd) AppColors.Primary else AppColors.TextSecondary)
                             }
                             Spacer(Modifier.width(8.dp))
                             OutlinedButton(
@@ -1043,12 +1089,12 @@ fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersC
                                 ),
                                 modifier = Modifier.height(32.dp)
                             ) {
-                                Text("OR", fontSize = 12.sp, fontWeight = if (!isAnd) FontWeight.Bold else FontWeight.Normal, color = if (!isAnd) AppColors.Primary else AppColors.TextSecondary)
+                                Text(stringResource(R.string.filter_or), fontSize = 12.sp, fontWeight = if (!isAnd) FontWeight.Bold else FontWeight.Normal, color = if (!isAnd) AppColors.Primary else AppColors.TextSecondary)
                             }
                         }
                     }
                     FilterConditionRow(
-                        isSpanish, condition,
+                        condition,
                         onChanged = { updated -> onFiltersChanged(filters.toMutableList().also { it[index] = updated }) },
                         onRemove = { onFiltersChanged(filters.toMutableList().also { it.removeAt(index) }) }
                     )
@@ -1058,10 +1104,10 @@ fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersC
                     TextButton(onClick = { onFiltersChanged(filters + FilterCondition()) }) {
                         Icon(Icons.Default.Add, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(if (isSpanish) "Agregar" else "Add", fontSize = 13.sp)
+                        Text(stringResource(R.string.add), fontSize = 13.sp)
                     }
                     TextButton(onClick = { onFiltersChanged(emptyList()) }) {
-                        Text(if (isSpanish) "Limpiar Todo" else "Clear All", fontSize = 13.sp, color = AppColors.ErrorRed)
+                        Text(stringResource(R.string.clear_all), fontSize = 13.sp, color = AppColors.ErrorRed)
                     }
                 }
             }
@@ -1071,7 +1117,6 @@ fun FilterSection(isSpanish: Boolean, filters: List<FilterCondition>, onFiltersC
 
 @Composable
 fun FilterConditionRow(
-    isSpanish: Boolean,
     condition: FilterCondition,
     onChanged: (FilterCondition) -> Unit,
     onRemove: () -> Unit
@@ -1088,12 +1133,12 @@ fun FilterConditionRow(
                 Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
-                Text(if (isSpanish) condition.field.labelEs else condition.field.label, fontSize = 11.sp, maxLines = 1)
+                Text(stringResource(condition.field.labelRes), fontSize = 11.sp, maxLines = 1)
             }
             DropdownMenu(expanded = fieldExpanded, onDismissRequest = { fieldExpanded = false }) {
                 FilterField.values().forEach { f ->
                     DropdownMenuItem(
-                        text = { Text(if (isSpanish) f.labelEs else f.label, fontSize = 13.sp) },
+                        text = { Text(stringResource(f.labelRes), fontSize = 13.sp) },
                         onClick = {
                             val newOps = getOperatorsForField(f)
                             val newOp = if (condition.operator in newOps) condition.operator else newOps.first()
@@ -1111,12 +1156,12 @@ fun FilterConditionRow(
                 Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
-                Text(if (isSpanish) condition.operator.labelEs else condition.operator.label, fontSize = 11.sp, maxLines = 1)
+                Text(stringResource(condition.operator.labelRes), fontSize = 11.sp, maxLines = 1)
             }
             DropdownMenu(expanded = opExpanded, onDismissRequest = { opExpanded = false }) {
                 ops.forEach { op ->
                     DropdownMenuItem(
-                        text = { Text(if (isSpanish) op.labelEs else op.label, fontSize = 13.sp) },
+                        text = { Text(stringResource(op.labelRes), fontSize = 13.sp) },
                         onClick = { onChanged(condition.copy(operator = op)); opExpanded = false }
                     )
                 }
@@ -1131,7 +1176,7 @@ fun FilterConditionRow(
                         onClick = { exp = true }, Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
-                        Text(condition.value.ifBlank { if (isSpanish) "Elegir…" else "Choose…" }, fontSize = 11.sp, maxLines = 1)
+                        Text(condition.value.ifBlank { stringResource(R.string.choose) }, fontSize = 11.sp, maxLines = 1)
                     }
                     DropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
                         Currency.values().forEach { c ->
@@ -1148,12 +1193,12 @@ fun FilterConditionRow(
                         onClick = { exp = true }, Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
-                        Text(condition.value.ifBlank { if (isSpanish) "Elegir…" else "Choose…" }, fontSize = 11.sp, maxLines = 1)
+                        Text(if (condition.value.isBlank()) stringResource(R.string.choose) else typeLabel(condition.value), fontSize = 11.sp, maxLines = 1)
                     }
                     DropdownMenu(expanded = exp, onDismissRequest = { exp = false }) {
-                        listOf("Expense" to (if (isSpanish) "Gasto" else "Expense"), "Sale" to (if (isSpanish) "Venta" else "Sale")).forEach { (v, l) ->
+                        listOf("Expense" to R.string.type_expense, "Sale" to R.string.type_sale).forEach { (v, l) ->
                             DropdownMenuItem(
-                                text = { Text(l, fontSize = 13.sp) },
+                                text = { Text(stringResource(l), fontSize = 13.sp) },
                                 onClick = { onChanged(condition.copy(value = v)); exp = false }
                             )
                         }
@@ -1169,9 +1214,9 @@ fun FilterConditionRow(
                         placeholder = {
                             Text(
                                 when (condition.field) {
-                                    FilterField.DATE -> "MM/dd/yyyy"
+                                    FilterField.DATE -> stringResource(R.string.date_input_pattern)
                                     FilterField.AMOUNT -> "0.00"
-                                    else -> if (isSpanish) "Buscar…" else "Search…"
+                                    else -> stringResource(R.string.search_placeholder)
                                 },
                                 fontSize = 11.sp
                             )
